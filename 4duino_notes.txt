@@ -1,0 +1,47 @@
+✅ Features Included:
+Initialization with gfx_ScreenMode, SD check, and image control loading
+
+A 30-second digital countdown
+
+A single button that cycles through 4 activities (Activity 1 → 2 → 3 → 4)
+
+A progress bar update after each activity
+
+A reset/start button
+
+Use of Digital Widgets, TextLabels, and ProgressBar (designed in Workshop4)
+
+⚙️ Assumptions:
+Workshop4 exported widgets to _4DUIN~1.dat and _4DUIN~1.gci
+
+Widget indexes:
+
+Digital Number Display → DIGIT_TIMER (index 0)
+
+Progress Bar → PROGRESS (index 1)
+
+Activity Label Text → LABEL_STATUS (index 2)
+
+Button connected to pin 2 for activity trigger
+
+Start/reset button on pin 3
+
+You can customize these indexes to match your project.
+
+📦 Workshop4 Requirements
+Ensure your ViSi project contains:
+
+A Digital Numeric Display named DIGIT_TIMER
+
+A Progress Bar named PROGRESS
+
+A Static Text Label named LABEL_STATUS
+
+These should be exported using File > Export and saved to SD card as .dat, .gci, and .txt (optional .ini).
+
+🧪 Need Help Testing?
+I can adjust the code if you tell me:
+
+The exact widget indexes you used in Workshop4
+
+If you want buzzer support or extra LED indicators

@@ -1,0 +1,151 @@
+#include <Picaso_Const4D.h>
+#include <Picaso_Serial_4DLib.h>
+
+#define DisplaySerial Serial
+Picaso_Serial_4DLib Display(&DisplaySerial);
+
+// Widget Indexes (adjust these to match your ViSi project)
+#define DIGIT_TIMER    0
+#define PROGRESS       1
+#define LABEL_STATUS   2
+
+// Pin Definitions
+#define ACTIVITY_PIN   2
+#define START_PIN      3
+
+// Global Handle for loaded widgets
+word hndl;
+
+// Countdown settings
+int countdown = 30;
+bool isCounting = false;
+unsigned long lastTick = 0;
+
+// Activity tracking
+int activityStep = 0;
+bool activityFlags[4] = {false, false, false, false};
+
+void mycallback(int ErrCode, unsigned char Errorbyte) {
+  while (1) {
+    digitalWrite(13, HIGH);
+    delay(200);
+    digitalWrite(13, LOW);
+    delay(200);
+  }
+}
+
+void setup() {
+  pinMode(13, OUTPUT);         // LED for error
+  pinMode(ACTIVITY_PIN, INPUT_PULLUP);
+  pinMode(START_PIN, INPUT_PULLUP);
+
+  Display.Callback4D = mycallback;
+  Display.TimeLimit4D = 5000;
+  DisplaySerial.begin(9600);
+
+  // Display reset
+  pinMode(4, OUTPUT);
+  digitalWrite(4, HIGH);
+  delay(100);
+  digitalWrite(4, LOW);
+  delay(5000);
+
+  Display.gfx_ScreenMode(PORTRAIT);
+
+  // SD card mount check
+  while (!Display.file_Mount()) {
+    Display.gfx_Cls();
+    Display.putstr("Insert SD card and reset!");
+    delay(1000);
+  }
+
+  // Load image widgets
+  hndl = Display.file_LoadImageControl("_4DUIN~1.dat", "_4DUIN~1.gci", 1);
+
+  // Clear and color setup
+  Display.gfx_BGcolour(WHITE);
+  Display.txt_BGcolour(WHITE);
+  Display.txt_FGcolour(BLUE);
+  Display.gfx_Cls();
+
+  Display.img_Show(hndl, DIGIT_TIMER);
+  Display.img_Show(hndl, PROGRESS);
+  Display.img_Show(hndl, LABEL_STATUS);
+
+  updateLabel("Press START");
+  updateProgress();
+  updateTimer(countdown);
+}
+
+void loop() {
+  if (!digitalRead(START_PIN) && !isCounting) {
+    startCountdown();
+    delay(500);
+  }
+
+  if (isCounting && millis() - lastTick >= 1000) {
+    countdown--;
+    updateTimer(countdown);
+    lastTick = millis();
+
+    if (countdown <= 0) {
+      isCounting = false;
+      updateLabel("Do the 4 activities...");
+    }
+  }
+
+  if (!isCounting && countdown <= 0 && digitalRead(ACTIVITY_PIN) == LOW) {
+    handleActivity();
+    delay(500);  // Debounce
+  }
+}
+
+// Function to update the digital display widget
+void updateTimer(int value) {
+  Display.img_SetWord(hndl, DIGIT_TIMER, IMAGE_INDEX, value);
+  Display.img_Show(hndl, DIGIT_TIMER);
+}
+
+// Update progress bar based on activities
+void updateProgress() {
+  int value = (activityStep * 25); // 0%, 25%, 50%, 75%, 100%
+  Display.img_SetWord(hndl, PROGRESS, IMAGE_INDEX, value);
+  Display.img_Show(hndl, PROGRESS);
+}
+
+// Display label text
+void updateLabel(const char* text) {
+  Display.img_SetWord(hndl, LABEL_STATUS, TEXT_COLOUR, BLUE);
+  Display.img_SetWord(hndl, LABEL_STATUS, TEXT_WIDTH, 1);
+  Display.img_SetWord(hndl, LABEL_STATUS, TEXT_HEIGHT, 1);
+  Display.img_SetStr(hndl, LABEL_STATUS, (char*)text);
+  Display.img_Show(hndl, LABEL_STATUS);
+}
+
+// Reset countdown
+void startCountdown() {
+  countdown = 30;
+  isCounting = true;
+  lastTick = millis();
+  activityStep = 0;
+  for (int i = 0; i < 4; i++) activityFlags[i] = false;
+  updateLabel("Counting down...");
+  updateProgress();
+  updateTimer(countdown);
+}
+
+// Handle activity triggers
+void handleActivity() {
+  if (activityStep < 4) {
+    activityFlags[activityStep] = true;
+    char msg[30];
+    sprintf(msg, "Activity %d complete", activityStep + 1);
+    updateLabel(msg);
+    activityStep++;
+    updateProgress();
+
+    if (activityStep == 4) {
+      updateLabel("All activities done!");
+    }
+  }
+}
